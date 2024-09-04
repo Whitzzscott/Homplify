@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homplify</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module">
+        import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "https://esm.run/@google/generative-ai";
+
+        async function generateCharacter() {
+            const apiKey = document.getElementById('apiKey').value;
+            const question = document.getElementById('Question').value;
+            const systemInstruction = document.getElementById('systemInstruction').value;
+            const topK = parseInt(document.getElementById('topK').value, 10);
+            const minP = parseFloat(document.getElementById('minP').value);
+            const randomness = parseFloat(document.getElementById('randomness').value);
+
+            if (!apiKey) {
+                alert('Please enter your API key at https://aistudio.google.com/app/apikey, and make sure you have text inside the question');
+                return;
+            }
+
+            const prompt = question 
+                ? `Your whole purpose is to generate answers based on the given question from: ${question}. Generated answers must be correct and use human vocabulary. NEVER add any special format or any markdown.`
+                : 'Generate a response to the given question. Ensure the answer is correct and uses human vocabulary. Do not include special formats or markdown.';
+
+            try {
+                const genAI = new GoogleGenerativeAI(apiKey);
+
+                const safetySettings = [
+                    {
+                        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                        threshold: HarmBlockThreshold.BLOCK_NONE,
+                    },
+                    {
+                        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                        threshold: HarmBlockThreshold.BLOCK_NONE,
+                    },
+                    {
+                        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                        threshold: HarmBlockThreshold.BLOCK_NONE,
+                    },
+                    {
+                        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                        threshold: HarmBlockThreshold.BLOCK_NONE,
+                    },
+                ];
+
+                const model = genAI.getGenerativeModel({
+                    model: "gemini-1.5-flash",
+                    systemInstruction: systemInstruction || `Your whole purpose is to generate answers based on the given question from: ${question}. Generated answers must be correct and use human vocabulary, do not use emoji or any AI vocabulary or words that make the answer AI Generated. NEVER add any special format or any markdown, make sure the question are not directed to you, if any of the question contain "You" then make sure its not directed to you nor user just answer the question without further context generated, do not use syntax like "**" or anything else within that, only give the correct answer not the formula.`,
+                    top_k: topK || 40,
+                    min_p: minP || 0.9,
+                    randomness: randomness || 0.7,
+                    modelinstruction: systemInstruction || 'Your whole purpose is to generate answers based on the given question from: ${question}. Generated answers must be correct and use human vocabulary, do not use emoji or any AI vocabulary or words that make the answer AI Generated. NEVER add any special format or any markdown, make sure the question are not directed to you, if any of the question contain "You" then make sure its not directed to you nor user just answer the question without further context generated, do not use syntax like "**" or anything else within that. only give the correct answer not the formula.',
+                });
+
+                const result = await model.generateContent(prompt);
+                const output = await result.response.text();
+
+                document.getElementById('result').textContent = output;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Check the console for details (debugging purposes). If there is no API key in the "Gemini API Key", please get one at https://aistudio.google.com/app/apikey.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('generateBtn').addEventListener('click', generateCharacter);
+            document.getElementById('toggleDangerZone').addEventListener('click', () => {
+                const dangerZone = document.getElementById('dangerZone');
+                dangerZone.classList.toggle('hidden');
+            });
+        });
+    </script>
+    <link rel="icon" href="https://cdn.glitch.global/4c3020c7-0725-437c-8c3e-e1662dad2d9b/18a30be0a129f29aa711d6de2c3c7715.jpg?v=1725408457128" type="image/x-icon"/>
+</head>
+<body>
+    <h1>Homplify</h1>
+    <label for="apiKey">Gemini API Key:</label>
+    <input type="text" id="apiKey" placeholder="Enter your API key">
+    <br>
+    <label for="Question">Question:</label>
+    <textarea id="Question" rows="6" placeholder="Enter questions here"></textarea>
+    <br>
+    <button id="generateBtn">Generate Answer</button>
+    <h2>Result:</h2>
+    <pre id="result"></pre>
+
+    <button id="toggleDangerZone" class="toggle-button">Toggle Danger Zone</button>
+    <div id="dangerZone" class="danger-zone hidden">
+        <h2>Danger Zone</h2>
+        <label for="systemInstruction">System Instruction:</label>
+        <textarea id="systemInstruction" rows="4" placeholder="Modify system instruction"></textarea>
+        <br>
+        <label for="topK">Top K:</label>
+        <input type="number" id="topK" min="0" placeholder="Default: 40">
+        <br>
+        <label for="minP">Min P:</label>
+        <input type="number" id="minP" min="0" max="1" step="0.01" placeholder="Default: 0.9">
+        <br>
+        <label for="randomness">Randomness:</label>
+        <input type="range" id="randomness" min="0" max="1" step="0.01" value="0.7">
+        <span id="randomnessValue">0.7</span>
+    </div>
+    <script>
+       window.onload = () => {
+            const randomnessSlider = document.getElementById('randomness');
+            const randomnessValue = document.getElementById('randomnessValue');
+
+            randomnessSlider.addEventListener('input', () => {
+                randomnessValue.textContent = randomnessSlider.value;
+            });
+
+            const resultBox = document.getElementById('result');
+            resultBox.addEventListener('dblclick', () => {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNode(resultBox);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                document.execCommand('copy');
+                alert('Text copied to clipboard!');
+            });
+        };
+    </script>
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script>
+        window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
+</body>
+</html>
